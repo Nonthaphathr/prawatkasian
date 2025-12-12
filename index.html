@@ -3,136 +3,594 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ระบบจัดเก็บประวัติครูเกษียณ - กระดุมทองวิทยา</title>
-    
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-
+    <title>ระบบรวบรวมข้อมูลประวัติครูผู้เกษียณ</title>
     <style>
-        body { font-family: 'Sarabun', sans-serif; background-color: #f8f9fa; }
-        .container { max-width: 900px; margin-top: 30px; margin-bottom: 50px; }
-        .card { border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border: none; }
-        .card-header { background-color: #1a73e8; color: white; border-radius: 15px 15px 0 0 !important; padding: 20px; }
-        .form-label { font-weight: 600; color: #333; }
-        .preview-img { width: 100px; height: 100px; object-fit: cover; margin: 5px; border-radius: 5px; border: 1px solid #ddd; cursor: pointer;}
-        #imagePreviewContainer { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
-        .loading-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(255,255,255,0.8); z-index: 9999; display: none;
-            justify-content: center; align-items: center; flex-direction: column;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Sarabun', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .form-section {
+            margin-bottom: 40px;
+        }
+
+        .section-title {
+            font-size: 1.8em;
+            color: #667eea;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #667eea;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #333;
+            font-size: 1.1em;
+        }
+
+        .form-group input[type="text"],
+        .form-group input[type="date"],
+        .form-group textarea {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            font-family: inherit;
+            transition: all 0.3s ease;
+        }
+
+        .form-group input[type="text"]:focus,
+        .form-group input[type="date"]:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .age-display {
+            margin-top: 10px;
+            padding: 10px 15px;
+            background: #f0f4ff;
+            border-radius: 8px;
+            color: #667eea;
+            font-weight: 600;
+            display: none;
+        }
+
+        .file-upload-area {
+            border: 3px dashed #667eea;
+            border-radius: 8px;
+            padding: 30px;
+            text-align: center;
+            background: #f8f9ff;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .file-upload-area:hover {
+            background: #f0f4ff;
+            border-color: #764ba2;
+        }
+
+        .file-upload-area input[type="file"] {
+            display: none;
+        }
+
+        .file-upload-label {
+            display: block;
+            cursor: pointer;
+        }
+
+        .file-upload-label i {
+            font-size: 3em;
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .file-preview {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .preview-item {
+            position: relative;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .preview-item img {
+            width: 100%;
+            height: 150px;
+            object-fit: cover;
+        }
+
+        .preview-item .remove-btn {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: #ff4444;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            cursor: pointer;
+            font-size: 1.2em;
+            line-height: 1;
+            transition: all 0.3s ease;
+        }
+
+        .preview-item .remove-btn:hover {
+            background: #cc0000;
+            transform: scale(1.1);
+        }
+
+        .submit-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.2em;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-top: 20px;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .submit-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .loading-spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .message {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            display: none;
+        }
+
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .message.active {
+            display: block;
+        }
+
+        /* Admin Dashboard Styles */
+        .admin-section {
+            margin-top: 60px;
+            padding-top: 40px;
+            border-top: 3px solid #e0e0e0;
+        }
+
+        .admin-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .export-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            font-size: 1em;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .export-btn:hover {
+            background: #218838;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(40, 167, 69, 0.3);
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background: white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .data-table thead {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .data-table th,
+        .data-table td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .data-table th {
+            font-weight: 600;
+            font-size: 1em;
+        }
+
+        .data-table tbody tr:hover {
+            background: #f8f9ff;
+        }
+
+        .data-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .action-btn {
+            padding: 8px 15px;
+            margin: 0 5px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9em;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .view-btn {
+            background: #17a2b8;
+            color: white;
+        }
+
+        .view-btn:hover {
+            background: #138496;
+        }
+
+        .delete-btn {
+            background: #dc3545;
+            color: white;
+        }
+
+        .delete-btn:hover {
+            background: #c82333;
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+            font-size: 1.2em;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            overflow: auto;
+        }
+
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 15px;
+            max-width: 800px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+            padding: 30px;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            font-size: 2em;
+            font-weight: bold;
+            color: #999;
+            cursor: pointer;
+            border: none;
+            background: none;
+            transition: all 0.3s ease;
+        }
+
+        .modal-close:hover {
+            color: #333;
+        }
+
+        .image-gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .image-gallery img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .image-gallery img:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.8em;
+            }
+
+            .content {
+                padding: 20px;
+            }
+
+            .section-title {
+                font-size: 1.4em;
+            }
+
+            .data-table {
+                font-size: 0.9em;
+            }
+
+            .data-table th,
+            .data-table td {
+                padding: 10px;
+            }
         }
     </style>
-    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600&display=swap" rel="stylesheet">
 </head>
 <body>
-
-    <div class="loading-overlay" id="loadingScreen">
-        <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;"></div>
-        <h5 class="mt-3 text-primary">กำลังบันทึกข้อมูลและอัปโหลดรูปภาพ...</h5>
-    </div>
-
     <div class="container">
-        
-        <div class="card mb-5">
-            <div class="card-header text-center">
-                <h3><i class="fas fa-user-graduate"></i> แบบฟอร์มประวัติครูผู้เกษียณ</h3>
-                <p class="mb-0">โรงเรียนกระดุมทองวิทยา</p>
-            </div>
-            <div class="card-body p-4">
-                <form id="teacherForm">
-                    
-                    <h5 class="text-primary mb-3 border-bottom pb-2">1. ข้อมูลส่วนตัว</h5>
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label class="form-label">ชื่อ-นามสกุล</label>
-                            <input type="text" class="form-control" id="fullName" required placeholder="เช่น นายสมชาย ใจดี">
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label">วัน/เดือน/ปีเกิด</label>
-                            <input type="date" class="form-control" id="dob" required>
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label">อายุ (ปี)</label>
-                            <input type="text" class="form-control bg-light" id="age" readonly placeholder="คำนวณอัตโนมัติ">
-                        </div>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">ข้อมูลครอบครัว</label>
-                        <input type="text" class="form-control" id="familyInfo" placeholder="เช่น คู่สมรส, จำนวนบุตร">
-                    </div>
-
-                    <h5 class="text-primary mt-4 mb-3 border-bottom pb-2">2. เส้นทางวิชาชีพ</h5>
-                    <div class="mb-3">
-                        <label class="form-label">ประวัติการศึกษา</label>
-                        <textarea class="form-control" id="education" rows="3" placeholder="ระบุวุฒิการศึกษา และสถาบัน"></textarea>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">ประสบการณ์ทำงาน</label>
-                        <textarea class="form-control" id="workExperience" rows="4" placeholder="ระบุตำแหน่งและปีที่ทำงาน"></textarea>
-                    </div>
-
-                    <h5 class="text-primary mt-4 mb-3 border-bottom pb-2">3. บทส่งท้าย</h5>
-                    <div class="mb-3">
-                        <label class="form-label">คติประจำใจ / ปรัชญาในการทำงาน</label>
-                        <input type="text" class="form-control" id="philosophy" placeholder="ข้อความสั้นๆ ที่ยึดถือปฏิบัติ">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">ความประทับใจ / ความผูกพันต่อโรงเรียน</label>
-                        <textarea class="form-control" id="impression" rows="4" placeholder="ความรู้สึกที่มีต่อโรงเรียนกระดุมทองวิทยา"></textarea>
-                    </div>
-
-                    <h5 class="text-primary mt-4 mb-3 border-bottom pb-2">4. อัปโหลดภาพประกอบ</h5>
-                    <div class="mb-3">
-                        <label class="form-label">เลือกรูปภาพ (สามารถเลือกได้หลายรูป)</label>
-                        <input type="file" class="form-control" id="imageInput" multiple accept="image/*">
-                        <div class="form-text text-muted">คลิกเลือกหลายรูปได้ | รองรับไฟล์ .jpg, .png</div>
-                    </div>
-                    <div id="imagePreviewContainer"></div>
-
-                    <div class="d-grid gap-2 mt-5">
-                        <button type="submit" class="btn btn-primary btn-lg"><i class="fas fa-save"></i> บันทึกข้อมูลประวัติ</button>
-                    </div>
-                </form>
-            </div>
+        <div class="header">
+            <h1>📚 ระบบรวบรวมข้อมูลประวัติครูผู้เกษียณ</h1>
+            <p>เพื่อนำไปใช้ในการจัดทำวิดีทัศน์ (VTR)</p>
         </div>
 
-        <div class="card">
-            <div class="card-header bg-dark d-flex justify-content-between align-items-center">
-                <span class="h5 mb-0 text-white"><i class="fas fa-table"></i> ฐานข้อมูลครูเกษียณ (สำหรับเจ้าหน้าที่)</span>
-                <button onclick="exportToExcel()" class="btn btn-success btn-sm"><i class="fas fa-file-excel"></i> Export Excel</button>
+        <div class="content">
+            <div class="message" id="message"></div>
+            <div class="loading" id="loading">
+                <div class="loading-spinner"></div>
+                <p>กำลังบันทึกข้อมูล...</p>
             </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-hover table-bordered" id="dataTable">
-                        <thead class="table-light">
+
+            <form id="teacherForm">
+                <!-- ข้อมูลส่วนตัว -->
+                <div class="form-section">
+                    <h2 class="section-title">ข้อมูลส่วนตัว</h2>
+                    
+                    <div class="form-group">
+                        <label for="fullname">ชื่อ-สกุล *</label>
+                        <input type="text" id="fullname" name="fullname" placeholder="นายธนะสิทธิ์ พรหมทอง" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="birthdate">วัน-เดือน-ปีเกิด *</label>
+                        <input type="date" id="birthdate" name="birthdate" required>
+                        <div class="age-display" id="ageDisplay"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="hometown">ภูมิลำเนา *</label>
+                        <input type="text" id="hometown" name="hometown" placeholder="อ.เมือง จ.ขอนแก่น" required>
+                    </div>
+                </div>
+
+                <!-- ข้อมูลเนื้อหา -->
+                <div class="form-section">
+                    <h2 class="section-title">ข้อมูลเนื้อหา</h2>
+
+                    <div class="form-group">
+                        <label for="family">ข้อมูลครอบครัว</label>
+                        <textarea id="family" name="family" placeholder="สมรสกับนาง.... มีบุตร....คน ได้แก่...." rows="4"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="education">ประวัติการศึกษา</label>
+                        <textarea id="education" name="education" placeholder="ระบุประวัติการศึกษา..." rows="4"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="experience">ประสบการณ์ทำงาน</label>
+                        <textarea id="experience" name="experience" placeholder="ระบุประสบการณ์การทำงาน..." rows="4"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="motto">คติประจำใจ/ปรัชญาในการทำงาน</label>
+                        <textarea id="motto" name="motto" placeholder="ระบุคติประจำใจหรือปรัชญาในการทำงาน..." rows="4"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="memories">ความประทับใจ/ความผูกพันตลอดการเป็นครู</label>
+                        <textarea id="memories" name="memories" placeholder="ระบุความประทับใจและความผูกพัน..." rows="4"></textarea>
+                    </div>
+                </div>
+
+                <!-- การจัดการไฟล์ภาพ -->
+                <div class="form-section">
+                    <h2 class="section-title">ภาพประกอบ</h2>
+                    
+                    <div class="form-group">
+                        <label>อัปโหลดภาพประกอบ (สามารถเลือกได้หลายภาพ)</label>
+                        <div class="file-upload-area" onclick="document.getElementById('imageFiles').click()">
+                            <label class="file-upload-label">
+                                <div style="font-size: 3em; color: #667eea;">📷</div>
+                                <p style="font-size: 1.1em; color: #667eea; font-weight: 600;">คลิกเพื่อเลือกภาพ</p>
+                                <p style="color: #999; margin-top: 5px;">รองรับไฟล์ JPG, PNG, GIF</p>
+                            </label>
+                            <input type="file" id="imageFiles" name="imageFiles" accept="image/*" multiple>
+                        </div>
+                        <div class="file-preview" id="filePreview"></div>
+                    </div>
+                </div>
+
+                <button type="submit" class="submit-btn" id="submitBtn">
+                    บันทึกข้อมูล
+                </button>
+            </form>
+
+            <!-- Admin Dashboard -->
+            <div class="admin-section">
+                <h2 class="section-title">ข้อมูลที่บันทึกแล้ว</h2>
+                
+                <div class="admin-controls">
+                    <button class="export-btn" onclick="exportToExcel()">
+                        📊 Export ไฟล์ Excel
+                    </button>
+                    <button class="export-btn" onclick="loadData()" style="background: #667eea;">
+                        🔄 รีเฟรชข้อมูล
+                    </button>
+                </div>
+
+                <div id="dataTableContainer">
+                    <table class="data-table">
+                        <thead>
                             <tr>
                                 <th>ชื่อ-สกุล</th>
+                                <th>วันเกิด</th>
                                 <th>อายุ</th>
-                                <th>เบอร์โทร/ครอบครัว</th>
-                                <th>คติประจำใจ</th>
-                                <th>รูปภาพ</th>
+                                <th>ภูมิลำเนา</th>
+                                <th>จำนวนภาพ</th>
+                                <th>วันที่บันทึก</th>
                                 <th>จัดการ</th>
                             </tr>
                         </thead>
-                        <tbody id="tableBody">
-                            <tr><td colspan="6" class="text-center">กำลังโหลดข้อมูล...</td></tr>
+                        <tbody id="dataTableBody">
+                            <tr>
+                                <td colspan="7" class="no-data">ไม่มีข้อมูล</td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>
             </div>
         </div>
-
     </div>
 
-    <script type="module">
-        // Import Firebase
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, orderBy, query, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
-        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-storage.js";
+    <!-- Modal for viewing images -->
+    <div id="imageModal" class="modal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeModal()">&times;</button>
+            <h2 style="color: #667eea; margin-bottom: 20px;">ภาพประกอบ</h2>
+            <div id="modalImageGallery" class="image-gallery"></div>
+        </div>
+    </div>
 
-        // Your Configuration
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+        import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js';
+
+        // Firebase configuration
         const firebaseConfig = {
             apiKey: "AIzaSyDPuOjelNvZZzNv6XhjzcTYDygKUkohOi0",
             authDomain: "prawatkasian.firebaseapp.com",
@@ -147,213 +605,301 @@
         const db = getFirestore(app);
         const storage = getStorage(app);
 
-        // --- 1. ระบบคำนวณอายุ ---
-        document.getElementById('dob').addEventListener('change', function() {
-            const dob = new Date(this.value);
+        // Global variables
+        let selectedFiles = [];
+        window.teacherData = [];
+
+        // Calculate age
+        document.getElementById('birthdate').addEventListener('change', function() {
+            const birthDate = new Date(this.value);
             const today = new Date();
-            let age = today.getFullYear() - dob.getFullYear();
-            const m = today.getMonth() - dob.getMonth();
-            if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) {
+            let age = today.getFullYear() - birthDate.getFullYear();
+            const monthDiff = today.getMonth() - birthDate.getMonth();
+            
+            if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
                 age--;
             }
-            document.getElementById('age').value = age;
+
+            const ageDisplay = document.getElementById('ageDisplay');
+            if (age >= 0) {
+                ageDisplay.textContent = `อายุ: ${age} ปี`;
+                ageDisplay.style.display = 'block';
+            }
         });
 
-        // --- 2. ระบบ Preview รูปก่อนอัปโหลด ---
-        const imageInput = document.getElementById('imageInput');
-        const previewContainer = document.getElementById('imagePreviewContainer');
-        let selectedFiles = []; // เก็บไฟล์ที่จะอัปโหลด
+        // Handle file selection
+        document.getElementById('imageFiles').addEventListener('change', function(e) {
+            const files = Array.from(e.target.files);
+            selectedFiles = [...selectedFiles, ...files];
+            displayFilePreview();
+        });
 
-        imageInput.addEventListener('change', function(e) {
-            previewContainer.innerHTML = '';
-            selectedFiles = Array.from(e.target.files);
-            
+        function displayFilePreview() {
+            const preview = document.getElementById('filePreview');
+            preview.innerHTML = '';
+
             selectedFiles.forEach((file, index) => {
                 const reader = new FileReader();
                 reader.onload = function(e) {
                     const div = document.createElement('div');
-                    div.style.position = 'relative';
+                    div.className = 'preview-item';
                     div.innerHTML = `
-                        <img src="${e.target.result}" class="preview-img">
-                        <span onclick="removeFile(${index})" style="position:absolute; top:0; right:0; background:red; color:white; border-radius:50%; width:20px; height:20px; text-align:center; line-height:20px; cursor:pointer;">&times;</span>
+                        <img src="${e.target.result}" alt="Preview">
+                        <button class="remove-btn" onclick="removeFile(${index})" type="button">&times;</button>
                     `;
-                    previewContainer.appendChild(div);
-                }
+                    preview.appendChild(div);
+                };
                 reader.readAsDataURL(file);
             });
-        });
-
-        // ฟังก์ชันลบรูปจาก Preview (Global scope hack for module)
-        window.removeFile = (index) => {
-            // หมายเหตุ: การลบไฟล์จาก input type='file' โดยตรงทำได้ยากใน JS 
-            // ในโค้ดตัวอย่างนี้จะแสดง Preview ให้ดูเฉยๆ แต่เวลาอัปโหลดจะใช้ค่าล่าสุดจาก input
-            // เพื่อความง่าย หากต้องการลบรายตัวต้องใช้ DataTransfer API ซึ่งซับซ้อนกว่า
-            alert("กรุณาเลือกไฟล์ใหม่อีกครั้งหากต้องการแก้ไขรูปภาพ");
-            document.getElementById('imageInput').value = ""; // Reset
-            previewContainer.innerHTML = "";
         }
 
-        // --- 3. ระบบบันทึกข้อมูล (Submit) ---
+        window.removeFile = function(index) {
+            selectedFiles.splice(index, 1);
+            displayFilePreview();
+        };
+
+        // Show message
+        function showMessage(text, type) {
+            const messageEl = document.getElementById('message');
+            messageEl.textContent = text;
+            messageEl.className = `message ${type} active`;
+            setTimeout(() => {
+                messageEl.classList.remove('active');
+            }, 5000);
+        }
+
+        // Form submission
         document.getElementById('teacherForm').addEventListener('submit', async function(e) {
             e.preventDefault();
-            
-            // แสดง Loading
-            document.getElementById('loadingScreen').style.display = 'flex';
+
+            const submitBtn = document.getElementById('submitBtn');
+            const loading = document.getElementById('loading');
+
+            submitBtn.disabled = true;
+            loading.classList.add('active');
 
             try {
-                // 3.1 อัปโหลดรูปภาพไป Storage
+                // Upload images
                 const imageUrls = [];
-                const files = document.getElementById('imageInput').files;
-                
-                for (let i = 0; i < files.length; i++) {
-                    const file = files[i];
-                    const storageRef = ref(storage, 'teachers_images/' + Date.now() + '_' + file.name);
-                    const snapshot = await uploadBytes(storageRef, file);
-                    const url = await getDownloadURL(snapshot.ref);
+                for (const file of selectedFiles) {
+                    const storageRef = ref(storage, `teacher-images/${Date.now()}_${file.name}`);
+                    await uploadBytes(storageRef, file);
+                    const url = await getDownloadURL(storageRef);
                     imageUrls.push(url);
                 }
 
-                // 3.2 บันทึกข้อมูล Text ไป Firestore
-                await addDoc(collection(db, "teachers"), {
-                    fullName: document.getElementById('fullName').value,
-                    dob: document.getElementById('dob').value,
-                    age: document.getElementById('age').value,
-                    familyInfo: document.getElementById('familyInfo').value,
+                // Calculate age
+                const birthDate = new Date(document.getElementById('birthdate').value);
+                const today = new Date();
+                let age = today.getFullYear() - birthDate.getFullYear();
+                const monthDiff = today.getMonth() - birthDate.getMonth();
+                if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+                    age--;
+                }
+
+                // Save to Firestore
+                const docRef = await addDoc(collection(db, 'teachers'), {
+                    fullname: document.getElementById('fullname').value,
+                    birthdate: document.getElementById('birthdate').value,
+                    age: age,
+                    hometown: document.getElementById('hometown').value,
+                    family: document.getElementById('family').value,
                     education: document.getElementById('education').value,
-                    workExperience: document.getElementById('workExperience').value,
-                    philosophy: document.getElementById('philosophy').value,
-                    impression: document.getElementById('impression').value,
-                    images: imageUrls, // เก็บ array ของลิงก์รูปภาพ
+                    experience: document.getElementById('experience').value,
+                    motto: document.getElementById('motto').value,
+                    memories: document.getElementById('memories').value,
+                    imageUrls: imageUrls,
                     createdAt: serverTimestamp()
                 });
 
-                // สำเร็จ
-                document.getElementById('loadingScreen').style.display = 'none';
-                Swal.fire('สำเร็จ!', 'บันทึกข้อมูลเรียบร้อยแล้ว', 'success');
+                showMessage('✅ บันทึกข้อมูลสำเร็จ!', 'success');
+                
+                // Reset form
                 document.getElementById('teacherForm').reset();
-                document.getElementById('imagePreviewContainer').innerHTML = '';
-                loadData(); // โหลดตารางใหม่
+                document.getElementById('ageDisplay').style.display = 'none';
+                selectedFiles = [];
+                displayFilePreview();
+
+                // Reload data
+                await loadData();
 
             } catch (error) {
-                console.error("Error adding document: ", error);
-                document.getElementById('loadingScreen').style.display = 'none';
-                Swal.fire('เกิดข้อผิดพลาด', error.message, 'error');
+                console.error('Error:', error);
+                showMessage('❌ เกิดข้อผิดพลาด: ' + error.message, 'error');
+            } finally {
+                submitBtn.disabled = false;
+                loading.classList.remove('active');
             }
         });
 
-        // --- 4. ระบบดึงข้อมูลมาแสดง (Load Data) ---
-        async function loadData() {
-            const tableBody = document.getElementById('tableBody');
-            tableBody.innerHTML = '';
-
-            const q = query(collection(db, "teachers"), orderBy("createdAt", "desc"));
-            const querySnapshot = await getDocs(q);
-
-            window.allTeachersData = []; // เก็บข้อมูลไว้สำหรับ Export
-
-            querySnapshot.forEach((docSnap) => {
-                const data = docSnap.data();
-                const docId = docSnap.id;
+        // Load data
+        window.loadData = async function() {
+            try {
+                const querySnapshot = await getDocs(collection(db, 'teachers'));
+                window.teacherData = [];
                 
-                // เตรียมข้อมูลสำหรับ Export
-                window.allTeachersData.push({
-                    ชื่อนามสกุล: data.fullName,
-                    วันเกิด: data.dob,
-                    อายุ: data.age,
-                    ครอบครัว: data.familyInfo,
-                    การศึกษา: data.education,
-                    ประสบการณ์: data.workExperience,
-                    คติประจำใจ: data.philosophy,
-                    ความประทับใจ: data.impression,
-                    ลิงก์รูปภาพ: data.images ? data.images.join(", ") : ""
+                querySnapshot.forEach((doc) => {
+                    window.teacherData.push({
+                        id: doc.id,
+                        ...doc.data()
+                    });
                 });
 
-                // สร้างปุ่มดูรูป
-                let imgBtn = '-';
-                if(data.images && data.images.length > 0){
-                    imgBtn = `<button class="btn btn-sm btn-info text-white" onclick="viewImages('${docId}')"><i class="fas fa-images"></i> ดู ${data.images.length} รูป</button>`;
-                }
+                // Sort by created date (newest first)
+                window.teacherData.sort((a, b) => {
+                    const dateA = a.createdAt?.toDate() || new Date(0);
+                    const dateB = b.createdAt?.toDate() || new Date(0);
+                    return dateB - dateA;
+                });
 
-                const row = `
-                    <tr>
-                        <td>${data.fullName}</td>
-                        <td>${data.age}</td>
-                        <td>${data.familyInfo}</td>
-                        <td>${data.philosophy}</td>
-                        <td>${imgBtn}</td>
-                        <td>
-                             <button class="btn btn-sm btn-danger" onclick="deleteTeacher('${docId}')"><i class="fas fa-trash"></i></button>
-                        </td>
-                    </tr>
-                `;
-                tableBody.innerHTML += row;
-                
-                // เก็บ URL รูปภาพไว้ใน Memory เพื่อเรียกใช้ตอนกดปุ่มดูรูป
-                window['imgs_' + docId] = data.images;
-            });
-            
-            if(querySnapshot.empty){
-                tableBody.innerHTML = '<tr><td colspan="6" class="text-center">ยังไม่มีข้อมูล</td></tr>';
+                displayData();
+            } catch (error) {
+                console.error('Error loading data:', error);
+                showMessage('❌ ไม่สามารถโหลดข้อมูลได้', 'error');
             }
-        }
+        };
 
-        // โหลดข้อมูลเมื่อเปิดเว็บ
-        loadData();
-
-        // --- 5. ฟังก์ชันเสริม (Global functions) ---
-        
-        // ดูรูปภาพ (SweetAlert Gallery)
-        window.viewImages = (id) => {
-            const images = window['imgs_' + id];
-            if(!images) return;
+        function displayData() {
+            const tbody = document.getElementById('dataTableBody');
             
-            // สร้าง HTML สำหรับ Gallery
-            let htmlContent = '<div style="display:flex; overflow-x:auto; gap:10px; padding:10px;">';
-            images.forEach(url => {
-                htmlContent += `<a href="${url}" target="_blank"><img src="${url}" style="height:150px; border-radius:5px; border:1px solid #ccc;"></a>`;
-            });
-            htmlContent += '</div><div class="mt-2 text-muted small">คลิกที่รูปเพื่อดูขนาดเต็มหรือบันทึก</div>';
-
-            Swal.fire({
-                title: 'รูปภาพประกอบ',
-                html: htmlContent,
-                width: 800,
-                showCloseButton: true,
-                showConfirmButton: false
-            });
-        }
-
-        // ลบข้อมูล
-        window.deleteTeacher = async (id) => {
-            Swal.fire({
-                title: 'ยืนยันการลบ?',
-                text: "ข้อมูลจะหายไปถาวร!",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#d33',
-                confirmButtonText: 'ใช่, ลบเลย'
-            }).then(async (result) => {
-                if (result.isConfirmed) {
-                    await deleteDoc(doc(db, "teachers", id));
-                    Swal.fire('ลบแล้ว!', 'ข้อมูลถูกลบเรียบร้อย', 'success');
-                    loadData();
-                }
-            })
-        }
-
-        // Export Excel
-        window.exportToExcel = () => {
-            if(!window.allTeachersData || window.allTeachersData.length === 0) {
-                Swal.fire('ไม่มีข้อมูล', 'ยังไม่มีข้อมูลให้ Export', 'warning');
+            if (window.teacherData.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="no-data">ไม่มีข้อมูล</td></tr>';
                 return;
             }
-            
-            const ws = XLSX.utils.json_to_sheet(window.allTeachersData);
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "TeachersData");
-            XLSX.writeFile(wb, "ประวัติครูเกษียณ.xlsx");
+
+            tbody.innerHTML = '';
+            window.teacherData.forEach((teacher) => {
+                const row = document.createElement('tr');
+                const createdDate = teacher.createdAt?.toDate() 
+                    ? teacher.createdAt.toDate().toLocaleDateString('th-TH')
+                    : 'ไม่ระบุ';
+                
+                row.innerHTML = `
+                    <td>${teacher.fullname}</td>
+                    <td>${new Date(teacher.birthdate).toLocaleDateString('th-TH')}</td>
+                    <td>${teacher.age} ปี</td>
+                    <td>${teacher.hometown}</td>
+                    <td>${teacher.imageUrls?.length || 0} ภาพ</td>
+                    <td>${createdDate}</td>
+                    <td>
+                        <button class="action-btn view-btn" onclick="viewImages('${teacher.id}')">ดูรูปภาพ</button>
+                        <button class="action-btn delete-btn" onclick="deleteRecord('${teacher.id}')">ลบ</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
         }
 
+        // View images
+        window.viewImages = function(id) {
+            const teacher = window.teacherData.find(t => t.id === id);
+            if (!teacher || !teacher.imageUrls || teacher.imageUrls.length === 0) {
+                alert('ไม่มีภาพประกอบ');
+                return;
+            }
+
+            const gallery = document.getElementById('modalImageGallery');
+            gallery.innerHTML = '';
+            
+            teacher.imageUrls.forEach(url => {
+                const img = document.createElement('img');
+                img.src = url;
+                img.onclick = () => window.open(url, '_blank');
+                gallery.appendChild(img);
+            });
+
+            document.getElementById('imageModal').classList.add('active');
+        };
+
+        window.closeModal = function() {
+            document.getElementById('imageModal').classList.remove('active');
+        };
+
+        // Close modal on outside click
+        window.onclick = function(event) {
+            const modal = document.getElementById('imageModal');
+            if (event.target === modal) {
+                modal.classList.remove('active');
+            }
+        };
+
+        // Delete record
+        window.deleteRecord = async function(id) {
+            if (!confirm('คุณต้องการลบข้อมูลนี้ใช่หรือไม่?')) {
+                return;
+            }
+
+            try {
+                const teacher = window.teacherData.find(t => t.id === id);
+                
+                // Delete images from storage
+                if (teacher.imageUrls) {
+                    for (const url of teacher.imageUrls) {
+                        try {
+                            const imageRef = ref(storage, url);
+                            await deleteObject(imageRef);
+                        } catch (error) {
+                            console.error('Error deleting image:', error);
+                        }
+                    }
+                }
+
+                // Delete document
+                await deleteDoc(doc(db, 'teachers', id));
+                showMessage('✅ ลบข้อมูลสำเร็จ', 'success');
+                await loadData();
+            } catch (error) {
+                console.error('Error deleting:', error);
+                showMessage('❌ ไม่สามารถลบข้อมูลได้', 'error');
+            }
+        };
+
+        // Export to Excel
+        window.exportToExcel = function() {
+            if (window.teacherData.length === 0) {
+                alert('ไม่มีข้อมูลให้ Export');
+                return;
+            }
+
+            // Prepare data for export
+            const exportData = window.teacherData.map(teacher => ({
+                'ชื่อ-สกุล': teacher.fullname,
+                'วันเกิด': new Date(teacher.birthdate).toLocaleDateString('th-TH'),
+                'อายุ': teacher.age + ' ปี',
+                'ภูมิลำเนา': teacher.hometown,
+                'ข้อมูลครอบครัว': teacher.family || '',
+                'ประวัติการศึกษา': teacher.education || '',
+                'ประสบการณ์ทำงาน': teacher.experience || '',
+                'คติประจำใจ': teacher.motto || '',
+                'ความประทับใจ': teacher.memories || '',
+                'จำนวนภาพ': teacher.imageUrls?.length || 0,
+                'วันที่บันทึก': teacher.createdAt?.toDate() 
+                    ? teacher.createdAt.toDate().toLocaleDateString('th-TH') 
+                    : 'ไม่ระบุ'
+            }));
+
+            // Convert to CSV
+            const headers = Object.keys(exportData[0]);
+            const csvContent = [
+                '\ufeff' + headers.join(','),
+                ...exportData.map(row => 
+                    headers.map(header => {
+                        const cell = row[header];
+                        return `"${String(cell).replace(/"/g, '""')}"`;
+                    }).join(',')
+                )
+            ].join('\n');
+
+            // Download
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `teacher_data_${new Date().toISOString().split('T')[0]}.csv`;
+            link.click();
+        };
+
+        // Load data on page load
+        loadData();
     </script>
 </body>
 </html>
