@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ระบบรวบรวมข้อมูลประวัติครูผู้เกษียณ</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -12,7 +15,7 @@
         }
 
         body {
-            font-family: 'Sarabun', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            font-family: 'Sarabun', sans-serif;
             background: linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #7e22ce 100%);
             min-height: 100vh;
             padding: 20px;
@@ -684,6 +687,49 @@
         // Global variables
         window.teacherData = [];
 
+        // Auto-save form data to localStorage
+        const formFields = ['fullname', 'birthdate', 'hometown', 'family', 'education', 'experience', 'motto', 'memories'];
+        
+        function saveFormData() {
+            const formData = {};
+            formFields.forEach(field => {
+                formData[field] = document.getElementById(field).value;
+            });
+            localStorage.setItem('teacherFormData', JSON.stringify(formData));
+        }
+
+        function loadFormData() {
+            const savedData = localStorage.getItem('teacherFormData');
+            if (savedData) {
+                const formData = JSON.parse(savedData);
+                formFields.forEach(field => {
+                    if (formData[field]) {
+                        document.getElementById(field).value = formData[field];
+                    }
+                });
+                // Trigger age calculation if birthdate exists
+                if (formData.birthdate) {
+                    const event = new Event('change');
+                    document.getElementById('birthdate').dispatchEvent(event);
+                }
+            }
+        }
+
+        function clearFormData() {
+            localStorage.removeItem('teacherFormData');
+        }
+
+        // Add event listeners to save form data on change
+        window.addEventListener('DOMContentLoaded', () => {
+            loadFormData();
+            
+            formFields.forEach(field => {
+                const element = document.getElementById(field);
+                element.addEventListener('input', saveFormData);
+                element.addEventListener('change', saveFormData);
+            });
+        });
+
         // Calculate age
         document.getElementById('birthdate').addEventListener('change', function() {
             const birthDate = new Date(this.value);
@@ -748,14 +794,13 @@
 
                 showMessage('✅ บันทึกข้อมูลสำเร็จ!', 'success');
                 
-                // Reset form (keep default name)
-                document.getElementById('birthdate').value = '';
-                document.getElementById('hometown').value = '';
-                document.getElementById('family').value = '';
-                document.getElementById('education').value = '';
-                document.getElementById('experience').value = '';
-                document.getElementById('motto').value = '';
-                document.getElementById('memories').value = '';
+                // Clear localStorage
+                clearFormData();
+                
+                // Reset form completely (including default name)
+                document.getElementById('teacherForm').reset();
+                // Restore default name
+                document.getElementById('fullname').value = 'นายธนะสิทธิ์ พรหมทอง';
                 document.getElementById('ageDisplay').style.display = 'none';
 
                 // Reload data
