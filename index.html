@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบจัดเก็บประวัติครูเกษียณ - กระดุมทองวิทยา</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <style>
+        body { font-family: 'Sarabun', sans-serif; background-color: #f8f9fa; }
+        .container { max-width: 900px; margin-top: 30px; margin-bottom: 50px; }
+        .card { border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border: none; }
+        .card-header { background-color: #1a73e8; color: white; border-radius: 15px 15px 0 0 !important; padding: 20px; }
+        .form-label { font-weight: 600; color: #333; }
+        .preview-img { width: 100px; height: 100px; object-fit: cover; margin: 5px; border-radius: 5px; border: 1px solid #ddd; cursor: pointer;}
+        #imagePreviewContainer { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
+        .loading-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255,255,255,0.8); z-index: 9999; display: none;
+            justify-content: center; align-items: center; flex-direction: column;
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <div class="loading-overlay" id="loadingScreen">
+        <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;"></div>
+        <h5 class="mt-3 text-primary">กำลังบันทึกข้อมูลและอัปโหลดรูปภาพ...</h5>
+    </div>
+
+    <div class="container">
+        
+        <div class="card mb-5">
+            <div class="card-header text-center">
+                <h3><i class="fas fa-user-graduate"></i> แบบฟอร์มประวัติครูผู้เกษียณ</h3>
+                <p class="mb-0">โรงเรียนกระดุมทองวิทยา</p>
+            </div>
+            <div class="card-body p-4">
+                <form id="teacherForm">
+                    
+                    <h5 class="text-primary mb-3 border-bottom pb-2">1. ข้อมูลส่วนตัว</h5>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">ชื่อ-นามสกุล</label>
+                            <input type="text" class="form-control" id="fullName" required placeholder="เช่น นายสมชาย ใจดี">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">วัน/เดือน/ปีเกิด</label>
+                            <input type="date" class="form-control" id="dob" required>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">อายุ (ปี)</label>
+                            <input type="text" class="form-control bg-light" id="age" readonly placeholder="คำนวณอัตโนมัติ">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">ข้อมูลครอบครัว</label>
+                        <input type="text" class="form-control" id="familyInfo" placeholder="เช่น คู่สมรส, จำนวนบุตร">
+                    </div>
+
+                    <h5 class="text-primary mt-4 mb-3 border-bottom pb-2">2. เส้นทางวิชาชีพ</h5>
+                    <div class="mb-3">
+                        <label class="form-label">ประวัติการศึกษา</label>
+                        <textarea class="form-control" id="education" rows="3" placeholder="ระบุวุฒิการศึกษา และสถาบัน"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">ประสบการณ์ทำงาน</label>
+                        <textarea class="form-control" id="workExperience" rows="4" placeholder="ระบุตำแหน่งและปีที่ทำงาน"></textarea>
+                    </div>
+
+                    <h5 class="text-primary mt-4 mb-3 border-bottom pb-2">3. บทส่งท้าย</h5>
+                    <div class="mb-3">
+                        <label class="form-label">คติประจำใจ / ปรัชญาในการทำงาน</label>
+                        <input type="text" class="form-control" id="philosophy" placeholder="ข้อความสั้นๆ ที่ยึดถือปฏิบัติ">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">ความประทับใจ / ความผูกพันต่อโรงเรียน</label>
+                        <textarea class="form-control" id="impression" rows="4" placeholder="ความรู้สึกที่มีต่อโรงเรียนกระดุมทองวิทยา"></textarea>
+                    </div>
+
+                    <h5 class="text-primary mt-4 mb-3 border-bottom pb-2">4. อัปโหลดภาพประกอบ</h5>
+                    <div class="mb-3">
+                        <label class="form-label">เลือกรูปภาพ (สามารถเลือกได้หลายรูป)</label>
+                        <input type="file" class="form-control" id="imageInput" multiple accept="image/*">
+                        <div class="form-text text-muted">คลิกเลือกหลายรูปได้ | รองรับไฟล์ .jpg, .png</div>
+                    </div>
+                    <div id="imagePreviewContainer"></div>
+
+                    <div class="d-grid gap-2 mt-5">
+                        <button type="submit" class="btn btn-primary btn-lg"><i class="fas fa-save"></i> บันทึกข้อมูลประวัติ</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header bg-dark d-flex justify-content-between align-items-center">
+                <span class="h5 mb-0 text-white"><i class="fas fa-table"></i> ฐานข้อมูลครูเกษียณ (สำหรับเจ้าหน้าที่)</span>
+                <button onclick="exportToExcel()" class="btn btn-success btn-sm"><i class="fas fa-file-excel"></i> Export Excel</button>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover table-bordered" id="dataTable">
+                        <thead class="table-light">
+                            <tr>
+                                <th>ชื่อ-สกุล</th>
+                                <th>อายุ</th>
+                                <th>เบอร์โทร/ครอบครัว</th>
+                                <th>คติประจำใจ</th>
+                                <th>รูปภาพ</th>
+                                <th>จัดการ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody">
+                            <tr><td colspan="6" class="text-center">กำลังโหลดข้อมูล...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script type="module">
+        // Import Firebase
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, orderBy, query, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-storage.js";
+
+        // Your Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyDPuOjelNvZZzNv6XhjzcTYDygKUkohOi0",
+            authDomain: "prawatkasian.firebaseapp.com",
+            projectId: "prawatkasian",
+            storageBucket: "prawatkasian.firebasestorage.app",
+            messagingSenderId: "743836041098",
+            appId: "1:743836041098:web:4cfa5bb89c2b024eec1273"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const storage = getStorage(app);
+
+        // --- 1. ระบบคำนวณอายุ ---
+        document.getElementById('dob').addEventListener('change', function() {
+            const dob = new Date(this.value);
+            const today = new Date();
+            let age = today.getFullYear() - dob.getFullYear();
+            const m = today.getMonth() - dob.getMonth();
+            if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) {
+                age--;
+            }
+            document.getElementById('age').value = age;
+        });
+
+        // --- 2. ระบบ Preview รูปก่อนอัปโหลด ---
+        const imageInput = document.getElementById('imageInput');
+        const previewContainer = document.getElementById('imagePreviewContainer');
+        let selectedFiles = []; // เก็บไฟล์ที่จะอัปโหลด
+
+        imageInput.addEventListener('change', function(e) {
+            previewContainer.innerHTML = '';
+            selectedFiles = Array.from(e.target.files);
+            
+            selectedFiles.forEach((file, index) => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const div = document.createElement('div');
+                    div.style.position = 'relative';
+                    div.innerHTML = `
+                        <img src="${e.target.result}" class="preview-img">
+                        <span onclick="removeFile(${index})" style="position:absolute; top:0; right:0; background:red; color:white; border-radius:50%; width:20px; height:20px; text-align:center; line-height:20px; cursor:pointer;">&times;</span>
+                    `;
+                    previewContainer.appendChild(div);
+                }
+                reader.readAsDataURL(file);
+            });
+        });
+
+        // ฟังก์ชันลบรูปจาก Preview (Global scope hack for module)
+        window.removeFile = (index) => {
+            // หมายเหตุ: การลบไฟล์จาก input type='file' โดยตรงทำได้ยากใน JS 
+            // ในโค้ดตัวอย่างนี้จะแสดง Preview ให้ดูเฉยๆ แต่เวลาอัปโหลดจะใช้ค่าล่าสุดจาก input
+            // เพื่อความง่าย หากต้องการลบรายตัวต้องใช้ DataTransfer API ซึ่งซับซ้อนกว่า
+            alert("กรุณาเลือกไฟล์ใหม่อีกครั้งหากต้องการแก้ไขรูปภาพ");
+            document.getElementById('imageInput').value = ""; // Reset
+            previewContainer.innerHTML = "";
+        }
+
+        // --- 3. ระบบบันทึกข้อมูล (Submit) ---
+        document.getElementById('teacherForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            // แสดง Loading
+            document.getElementById('loadingScreen').style.display = 'flex';
+
+            try {
+                // 3.1 อัปโหลดรูปภาพไป Storage
+                const imageUrls = [];
+                const files = document.getElementById('imageInput').files;
+                
+                for (let i = 0; i < files.length; i++) {
+                    const file = files[i];
+                    const storageRef = ref(storage, 'teachers_images/' + Date.now() + '_' + file.name);
+                    const snapshot = await uploadBytes(storageRef, file);
+                    const url = await getDownloadURL(snapshot.ref);
+                    imageUrls.push(url);
+                }
+
+                // 3.2 บันทึกข้อมูล Text ไป Firestore
+                await addDoc(collection(db, "teachers"), {
+                    fullName: document.getElementById('fullName').value,
+                    dob: document.getElementById('dob').value,
+                    age: document.getElementById('age').value,
+                    familyInfo: document.getElementById('familyInfo').value,
+                    education: document.getElementById('education').value,
+                    workExperience: document.getElementById('workExperience').value,
+                    philosophy: document.getElementById('philosophy').value,
+                    impression: document.getElementById('impression').value,
+                    images: imageUrls, // เก็บ array ของลิงก์รูปภาพ
+                    createdAt: serverTimestamp()
+                });
+
+                // สำเร็จ
+                document.getElementById('loadingScreen').style.display = 'none';
+                Swal.fire('สำเร็จ!', 'บันทึกข้อมูลเรียบร้อยแล้ว', 'success');
+                document.getElementById('teacherForm').reset();
+                document.getElementById('imagePreviewContainer').innerHTML = '';
+                loadData(); // โหลดตารางใหม่
+
+            } catch (error) {
+                console.error("Error adding document: ", error);
+                document.getElementById('loadingScreen').style.display = 'none';
+                Swal.fire('เกิดข้อผิดพลาด', error.message, 'error');
+            }
+        });
+
+        // --- 4. ระบบดึงข้อมูลมาแสดง (Load Data) ---
+        async function loadData() {
+            const tableBody = document.getElementById('tableBody');
+            tableBody.innerHTML = '';
+
+            const q = query(collection(db, "teachers"), orderBy("createdAt", "desc"));
+            const querySnapshot = await getDocs(q);
+
+            window.allTeachersData = []; // เก็บข้อมูลไว้สำหรับ Export
+
+            querySnapshot.forEach((docSnap) => {
+                const data = docSnap.data();
+                const docId = docSnap.id;
+                
+                // เตรียมข้อมูลสำหรับ Export
+                window.allTeachersData.push({
+                    ชื่อนามสกุล: data.fullName,
+                    วันเกิด: data.dob,
+                    อายุ: data.age,
+                    ครอบครัว: data.familyInfo,
+                    การศึกษา: data.education,
+                    ประสบการณ์: data.workExperience,
+                    คติประจำใจ: data.philosophy,
+                    ความประทับใจ: data.impression,
+                    ลิงก์รูปภาพ: data.images ? data.images.join(", ") : ""
+                });
+
+                // สร้างปุ่มดูรูป
+                let imgBtn = '-';
+                if(data.images && data.images.length > 0){
+                    imgBtn = `<button class="btn btn-sm btn-info text-white" onclick="viewImages('${docId}')"><i class="fas fa-images"></i> ดู ${data.images.length} รูป</button>`;
+                }
+
+                const row = `
+                    <tr>
+                        <td>${data.fullName}</td>
+                        <td>${data.age}</td>
+                        <td>${data.familyInfo}</td>
+                        <td>${data.philosophy}</td>
+                        <td>${imgBtn}</td>
+                        <td>
+                             <button class="btn btn-sm btn-danger" onclick="deleteTeacher('${docId}')"><i class="fas fa-trash"></i></button>
+                        </td>
+                    </tr>
+                `;
+                tableBody.innerHTML += row;
+                
+                // เก็บ URL รูปภาพไว้ใน Memory เพื่อเรียกใช้ตอนกดปุ่มดูรูป
+                window['imgs_' + docId] = data.images;
+            });
+            
+            if(querySnapshot.empty){
+                tableBody.innerHTML = '<tr><td colspan="6" class="text-center">ยังไม่มีข้อมูล</td></tr>';
+            }
+        }
+
+        // โหลดข้อมูลเมื่อเปิดเว็บ
+        loadData();
+
+        // --- 5. ฟังก์ชันเสริม (Global functions) ---
+        
+        // ดูรูปภาพ (SweetAlert Gallery)
+        window.viewImages = (id) => {
+            const images = window['imgs_' + id];
+            if(!images) return;
+            
+            // สร้าง HTML สำหรับ Gallery
+            let htmlContent = '<div style="display:flex; overflow-x:auto; gap:10px; padding:10px;">';
+            images.forEach(url => {
+                htmlContent += `<a href="${url}" target="_blank"><img src="${url}" style="height:150px; border-radius:5px; border:1px solid #ccc;"></a>`;
+            });
+            htmlContent += '</div><div class="mt-2 text-muted small">คลิกที่รูปเพื่อดูขนาดเต็มหรือบันทึก</div>';
+
+            Swal.fire({
+                title: 'รูปภาพประกอบ',
+                html: htmlContent,
+                width: 800,
+                showCloseButton: true,
+                showConfirmButton: false
+            });
+        }
+
+        // ลบข้อมูล
+        window.deleteTeacher = async (id) => {
+            Swal.fire({
+                title: 'ยืนยันการลบ?',
+                text: "ข้อมูลจะหายไปถาวร!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                confirmButtonText: 'ใช่, ลบเลย'
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    await deleteDoc(doc(db, "teachers", id));
+                    Swal.fire('ลบแล้ว!', 'ข้อมูลถูกลบเรียบร้อย', 'success');
+                    loadData();
+                }
+            })
+        }
+
+        // Export Excel
+        window.exportToExcel = () => {
+            if(!window.allTeachersData || window.allTeachersData.length === 0) {
+                Swal.fire('ไม่มีข้อมูล', 'ยังไม่มีข้อมูลให้ Export', 'warning');
+                return;
+            }
+            
+            const ws = XLSX.utils.json_to_sheet(window.allTeachersData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "TeachersData");
+            XLSX.writeFile(wb, "ประวัติครูเกษียณ.xlsx");
+        }
+
+    </script>
+</body>
+</html>
